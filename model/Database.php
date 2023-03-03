@@ -38,7 +38,7 @@ class Database{
 
             if($stmt === false) throw new Exception('Tidak dapat melakukan eksekusi statement, #2');
 
-            if($params) $stmt->bind_param($params[0], $params[1]);
+            if($params) $stmt->bind_param($params[0], ...$params[1]);
 
             $stmt->execute();
 

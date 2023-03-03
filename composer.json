@@ -1,0 +1,15 @@
+{
+    "name": "shapeide/yupa-assets",
+    "description": "Assets API to the Yupa Projects",
+    "type": "project",
+    "require": {
+        "phpunit/phpunit": "^10.0",
+        "nesbot/carbon": "^2.66"
+    },
+    "authors": [
+        {
+            "name": "danizakaria63",
+            "email": "daniootsutsuki@gmail.com"
+        }
+    ]
+}

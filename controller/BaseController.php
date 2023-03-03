@@ -1,14 +1,24 @@
 <?php
 
+require 'vendor/autoload.php';
+
 class BaseController{
     private $mErrorCode = [
         '500' => 'HTTP/1.1 500 Internal Server Error',
         '422' => 'HTTP/1.1 422 Unprocessable Entity',
+        '401' => 'HTTP/1.1 401 Unauthenticated',
     ];
      
     public function __call($name, $arguments)
     {
         $this->setResponse('',['HTTP/1.1 404 Not Found']);
+    }
+
+    protected function validateAccountKey($account_key){
+        $accModel = new AccountModel();
+        $accData = $accModel->findByKey($account_key);
+        if(!$accData) return $this->responseErr(401, 'Access Unauthenticated');
+        return $accData[0];
     }
 
     protected function responseOK($data, $message = ''){
