@@ -4,6 +4,13 @@ use Carbon\Carbon;
 
 class APIController extends BaseController
 {
+    private $mTimeNow;
+
+    public function __construct()
+    {
+        $this->mTimeNow = Carbon::now();
+    }
+
     public function put_image()
     {
         /**
@@ -19,6 +26,7 @@ class APIController extends BaseController
         header("Acess-Control-Allow-Origin: *");
         header("Acess-Control-Allow-Methods: POST");
         header("Acess-Control-Allow-Headers: Acess-Control-Allow-Headers,Content-Type,Acess-Control-Allow-Methods,Authorization");
+        $this->methodAllowed("POST");
 
         # Check for active account
         //  $headers = getallheaders();
@@ -36,8 +44,9 @@ class APIController extends BaseController
             $fileName = $_FILES['image']['name'];
             $tempPath = $_FILES['image']['tmp_name'];
             $fileSize = $_FILES['image']['size']; # karena penyimpanan server unlimited, jadi gausah dibatesin
-
             if (empty($fileName)) throw new RuntimeException("Gambar tidak ada, #2");
+            $fileNameHash = sha1($fileName);
+            $urlNameHash = sha1($this->mTimeNow);
 
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             if (false === $ext = array_search($finfo->file($_FILES['image']['tmp_name']), [
@@ -50,21 +59,42 @@ class APIController extends BaseController
             $accPath = BASE_PATH . "\\assets\\" . $accData['id'];
             if (!file_exists($accPath)) {
                 mkdir($accPath);
-                chmod($accPath, 755);
+                chmod($accPath, 777);
             }
 
-            $uploadPath = $accPath . "\\images\\";
+            $uploadPath = $accPath . "\\image\\";
             if (!file_exists($uploadPath)) {
                 mkdir($uploadPath);
-                chmod($uploadPath, 755);
+                chmod($uploadPath, 777);
             }
 
             if (!move_uploaded_file(
                 $tempPath,
-                "$uploadPath.$ext"
+                "$uploadPath\\$fileNameHash.$ext"
             )) throw new RuntimeException("Gagal memindahkan gambar");
 
-            return $this->responseOK(null, 'Upload gambar berhasil');
+            // chmod("$uploadPath\\$fileNameHash.$ext", 755);
+
+            # save data to database
+            $asetModel = new AsetModel(); 
+            $data = [
+                $accData['id'],
+                $fileNameHash,
+                $fileName,
+                $urlNameHash,
+                $ext,
+                $uploadPath,
+                $fileSize,
+                'image',
+                $ext,
+                $fileSize,
+                '',
+                $this->mTimeNow,
+                $this->mTimeNow
+            ];
+            $asetId = $asetModel->insertOne($data);
+
+            return $this->responseOK(['image_id'=>$asetId,'image_key'=>$urlNameHash], 'Upload gambar berhasil');
         } catch (RuntimeException $e) {
             return $this->responseErr(422, $e->getMessage());
         }
@@ -76,6 +106,51 @@ class APIController extends BaseController
 
     public function put_asset()
     {
+    }
+
+    public function image(){
+        /**
+         * This will be return an image
+         * 1. access of this method will be like index.php/aset/image/{hash_image} 
+         * 2. getting right after parameter after methods parameter
+         * 3. then selected image will be provided as well
+         */
+        header("Acess-Control-Allow-Origin: *");
+        $this->methodAllowed("GET");
+
+        try{
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $uri = explode('/', $uri);
+        $image_key = $uri[URL_PARAM_1];
+        if(!isset($image_key)) throw new Exception("Parameter gambar tidak ada");
+
+        # search for based image key
+        $assetModel = new AsetModel();
+        $imageData = $assetModel->findOne($image_key);
+        if(count($imageData) < 1) throw new Exception("Gambar tidak dikenal");
+
+        $accFolder = $imageData[0]['account_id'];
+        $typeFolder = $imageData[0]['output_type'];
+        $filename = $imageData[0]['file_name'];
+        $fileExt = $imageData[0]['output_ext'];
+        $fileSize = $imageData[0]['file_size'];
+
+        # response image
+        $filepath = BASE_PATH."\\assets\\$accFolder\\$typeFolder\\$filename.$fileExt";
+        $filemime = pathinfo($filepath, PATHINFO_EXTENSION);
+        header("Content-type: $filemime");
+
+        # response as image
+        if(false) return imagejpeg($filepath);
+
+        # response as base64 string
+        $data = file_get_contents($filepath);
+        $base64string = 'data: image/'.$filemime.';base64,'.base64_encode($data);
+        echo $base64string;
+        
+        }catch(Exception $e){
+            return $this->responseErr(422, $e->getMessage());
+        }
     }
 
     public function test()

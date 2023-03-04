@@ -56,6 +56,12 @@ class BaseController{
         exit;
     }
 
+    protected function methodAllowed($method){
+        $mReqMethod = $_SERVER['REQUEST_METHOD'];
+        if($mReqMethod != $method) return $this->responseErr(401, "Method tidak sesuai");
+        return true;
+    }
+
     protected function getUriSegments(){
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $uri = explode('/', $uri);

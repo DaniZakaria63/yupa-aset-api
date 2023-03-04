@@ -31,6 +31,21 @@ class Database{
         return false;
     }
 
+    public function insert($query = '', $params = []){
+        try{
+            $this->connection->begin_transaction();
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute([...$params]);
+            $this->connection->commit();
+            $stmt->close();
+            return $stmt->insert_id;
+        }catch(Exception $e){
+            $this->connection->rollback();
+            throw new Exception($e->getMessage());
+        }
+        return false;
+    }
+
     public function executeStatement($query = '', $params = []){
         
         try{
