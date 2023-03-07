@@ -37,8 +37,9 @@ class Database{
             $stmt = $this->connection->prepare($query);
             $stmt->execute([...$params]);
             $this->connection->commit();
+            $inserted_id = $stmt->insert_id;
             $stmt->close();
-            return $stmt->insert_id;
+            return $inserted_id;
         }catch(Exception $e){
             $this->connection->rollback();
             throw new Exception($e->getMessage());

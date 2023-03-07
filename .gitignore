@@ -1,3 +1,4 @@
 /helper/config.php
 /vendor/
 /assets/
+/cache/*

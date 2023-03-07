@@ -1,6 +1,7 @@
 <?php
 
 define('BASE_PATH',__DIR__);
+define('BASE_URL_REAL', 'http://localhost/yupa-assets');
  
 require __DIR__  .'/helper/bootstrap.php';
 

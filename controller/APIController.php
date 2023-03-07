@@ -46,7 +46,7 @@ class APIController extends BaseController
             $fileSize = $_FILES['image']['size']; # karena penyimpanan server unlimited, jadi gausah dibatesin
             if (empty($fileName)) throw new RuntimeException("Gambar tidak ada, #2");
             $fileNameHash = sha1($fileName);
-            $urlNameHash = sha1($this->mTimeNow);
+            $urlNameHash = sha1($fileNameHash.$this->mTimeNow);
 
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             if (false === $ext = array_search($finfo->file($_FILES['image']['tmp_name']), [
@@ -59,13 +59,13 @@ class APIController extends BaseController
             $accPath = BASE_PATH . "\\assets\\" . $accData['id'];
             if (!file_exists($accPath)) {
                 mkdir($accPath);
-                chmod($accPath, 777);
+                chmod($accPath, 755);
             }
 
             $uploadPath = $accPath . "\\image\\";
             if (!file_exists($uploadPath)) {
                 mkdir($uploadPath);
-                chmod($uploadPath, 777);
+                chmod($uploadPath, 755);
             }
 
             if (!move_uploaded_file(
@@ -137,17 +137,24 @@ class APIController extends BaseController
 
         # response image
         $filepath = BASE_PATH."\\assets\\$accFolder\\$typeFolder\\$filename.$fileExt";
+        $urlpath = BASE_URL_REAL."/assets/$accFolder/$typeFolder/$filename.$fileExt";
         $filemime = pathinfo($filepath, PATHINFO_EXTENSION);
-        header("Content-type: $filemime");
 
-        # response as image
-        if(false) return imagejpeg($filepath);
+        if(false) {
+            # response as image
+            if(!file_exists($filepath)) throw new Exception("File tidak ada");
 
-        # response as base64 string
-        $data = file_get_contents($filepath);
-        $base64string = 'data: image/'.$filemime.';base64,'.base64_encode($data);
-        echo $base64string;
-        
+            if($image = imagecreatefromjpeg($urlpath)){
+                header('Content-type: image/jpg');
+                imagejpeg($image,"cache/$filename.$fileExt",100);
+                imagedestroy($image); 
+            }else throw new Exception("Tidak dapat memuat gambar");
+        }else{
+            # response as base64 string
+            $data = file_get_contents($filepath);
+            $base64string = 'data: image/'.$filemime.';base64,'.base64_encode($data);
+            echo $base64string;
+        }
         }catch(Exception $e){
             return $this->responseErr(422, $e->getMessage());
         }

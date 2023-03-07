@@ -4,7 +4,8 @@
     "type": "project",
     "require": {
         "phpunit/phpunit": "^10.0",
-        "nesbot/carbon": "^2.66"
+        "nesbot/carbon": "^2.66",
+        "gregwar/image": "^2.1"
     },
     "authors": [
         {
